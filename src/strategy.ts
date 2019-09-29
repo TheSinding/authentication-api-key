@@ -1,0 +1,79 @@
+import { Params, Service } from "@feathersjs/feathers";
+import { NotAuthenticated } from "@feathersjs/errors";
+import { IncomingMessage, ServerResponse } from "http";
+import {
+  AuthenticationBaseStrategy,
+  AuthenticationResult
+} from "@feathersjs/authentication";
+
+export class ApiKeyStrategy extends AuthenticationBaseStrategy {
+  private serviceBased: boolean = false;
+  constructor() {
+    super();
+  }
+
+  verifyConfiguration() {
+    this.serviceBased = ["service", "entity"].every(
+      prop => prop in this.configuration
+    );
+    if (!this.serviceBased) {
+      if (!("key" in this.configuration)) {
+        throw new Error(
+          `A static key is missing, when strategy '${this.name}', is not service based`
+        );
+      }
+    }
+    ["headerField"].forEach(prop => {
+      if (prop in this.configuration) return;
+      throw new Error(`'${prop}' is missing from configuration`);
+    });
+  }
+
+  get configuration() {
+    const config = super.configuration || {};
+    return { errorMessage: "Invalid API key", entity: "api-key", ...config };
+  }
+
+  async findEntity(apiKey: string, params: Params) {
+    const { errorMessage, entity } = this.configuration;
+    const result = await this.entityService.find({
+      query: { [entity]: apiKey, $limit: 1 }
+    });
+    if (result.total === 0) {
+      throw new NotAuthenticated(errorMessage);
+    }
+    return result.data[0];
+  }
+
+  async authenticate(authRequest: AuthenticationResult, params: Params) {
+    const { key, errorMessage, entity, revokedField } = this.configuration;
+    const apiKey = authRequest[entity];
+    if (!this.serviceBased) {
+      if (key !== apiKey) throw new NotAuthenticated(errorMessage);
+      return { apiKey: true };
+    }
+
+    const apiKeyData = await this.findEntity(apiKey, params);
+    if (revokedField in apiKeyData) {
+      if (apiKeyData[revokedField]) {
+        throw new NotAuthenticated("API Key has been revoked");
+      }
+    }
+    return {
+      apiKey: true
+    };
+  }
+
+  async parse(req: IncomingMessage, res: ServerResponse) {
+    const { headerField, entity } = this.configuration;
+    const apiKey = req.headers[headerField];
+    if (apiKey) {
+      return {
+        strategy: this.name,
+        [entity]: apiKey
+      };
+    }
+
+    return null;
+  }
+}

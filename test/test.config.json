@@ -1,0 +1,12 @@
+{
+  "authentication": {
+    "authStrategies": ["jwt", "local", "refresh-token", "api-key"],
+    "api-key": {
+      "entity": "api-key",
+      "service": "api-keys",
+      "key": "supersecret",
+      "revokedField": "revoked",
+      "headerField": "x-api-key"
+    }
+  }
+}
