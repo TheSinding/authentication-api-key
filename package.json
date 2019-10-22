@@ -4,7 +4,7 @@
   "version": "0.0.3",
   "homepage": "https://simonsinding.me",
   "main": "lib/",
-  "types": "./lib/main.d.ts",
+  "types": "./lib/index.d.ts",
   "keywords": [
     "feathers",
     "feathers-plugin",
