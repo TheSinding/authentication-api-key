@@ -1,10 +1,10 @@
 {
   "name": "@thesinding/authentication-api-key",
   "description": "API Key authentication strategy for @feathers/authentication",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "homepage": "https://simonsinding.me",
   "main": "lib/",
-  "types": "lib/",
+  "types": "./lib/main.d.ts",
   "keywords": [
     "feathers",
     "feathers-plugin",
@@ -39,7 +39,6 @@
   "directories": {
     "lib": "lib"
   },
-  "types": "./lib/main.d.ts",
   "publishConfig": {
     "access": "public"
   },
