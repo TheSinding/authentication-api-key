@@ -46,11 +46,30 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
   }
 
   async authenticate(authRequest: AuthenticationResult, params: Params) {
-    const { key, errorMessage, entity, revokedField } = this.configuration;
+    const {
+      key,
+      errorMessage,
+      entity,
+      revokedField,
+      headerField
+    } = this.configuration;
     const apiKey = authRequest[entity];
+    const response = {
+      authentication: {
+        strategy: this.name,
+        [entity]: apiKey
+      },
+      headers: {
+        ...params.headers,
+        [headerField]: apiKey
+      },
+      [entity]: apiKey,
+      apiKey: true
+    };
+
     if (!this.serviceBased) {
       if (key !== apiKey) throw new NotAuthenticated(errorMessage);
-      return { apiKey: true };
+      return response;
     }
 
     const apiKeyData = await this.findEntity(apiKey, params);
@@ -59,9 +78,7 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
         throw new NotAuthenticated("API Key has been revoked");
       }
     }
-    return {
-      apiKey: true
-    };
+    return response;
   }
 
   async parse(req: IncomingMessage, res: ServerResponse) {
