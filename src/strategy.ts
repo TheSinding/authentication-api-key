@@ -67,7 +67,6 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
         ...params.headers,
         [headerField]: apiKey
       },
-      [entity]: apiKey,
       apiKey: true
     };
 
@@ -82,6 +81,8 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
         throw new NotAuthenticated("API Key has been revoked");
       }
     }
+
+    response[entity] = apiKeyData;
     return response;
   }
 
