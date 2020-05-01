@@ -67,7 +67,8 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
         ...params.headers,
         [headerField]: apiKey
       },
-      apiKey: true
+      apiKey: true,
+      [entity]: {}
     };
 
     if (!this.serviceBased) {
