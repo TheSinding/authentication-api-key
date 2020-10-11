@@ -38,12 +38,13 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
     const { errorMessage, entity } = this.configuration;
     try {
       const result = await this.entityService.find({
-        query: { [entity]: apiKey, $limit: 1 }
+        query: { [entity]: apiKey, $limit: 1 },
+        paginate: false
       });
-      if (result.total === 0) {
+      if (result.length === 0) {
         throw new NotAuthenticated(errorMessage);
       }
-      return result.data[0];
+      return result[0];
     } catch (error) {
       throw new NotAuthenticated(errorMessage);
     }
