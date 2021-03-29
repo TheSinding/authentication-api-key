@@ -1,19 +1,10 @@
-import { Params } from "@feathersjs/feathers";
-import { InvalidAPIError } from "./InvalidAPIKeyError";
+import { Params, Service } from "@feathersjs/feathers";
 import { NotAuthenticated } from "@feathersjs/errors";
 import { IncomingMessage, ServerResponse } from "http";
 import {
   AuthenticationBaseStrategy,
-  AuthenticationResult,
+  AuthenticationResult
 } from "@feathersjs/authentication";
-
-interface Configuration {
-  entity: string;
-  service: string;
-  key: string;
-  revokedField: string;
-  headerField: string;
-}
 
 export class ApiKeyStrategy extends AuthenticationBaseStrategy {
   private serviceBased: boolean = false;
@@ -21,14 +12,9 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
     super();
   }
 
-  get configuration(): Configuration {
-    const config = super.configuration || {};
-    return { entity: "api-key", ...config };
-  }
-
   verifyConfiguration() {
     this.serviceBased = ["service", "entity"].every(
-      (prop) => prop in this.configuration
+      prop => prop in this.configuration
     );
     if (!this.serviceBased) {
       if (!("key" in this.configuration)) {
@@ -37,46 +23,57 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
         );
       }
     }
-    ["headerField"].forEach((prop) => {
+    ["headerField"].forEach(prop => {
       if (prop in this.configuration) return;
       throw new Error(`'${prop}' is missing from configuration`);
     });
   }
 
+  get configuration() {
+    const config = super.configuration || {};
+    return { errorMessage: "Invalid API key", entity: "api-key", ...config };
+  }
+
   async findEntity(apiKey: string, params: Params) {
-    const { entity } = this.configuration;
+    const { errorMessage, entity } = this.configuration;
     try {
       const result = await this.entityService.find({
         query: { [entity]: apiKey, $limit: 1 },
-        paginate: false,
+        paginate: false
       });
       if (result.length === 0) {
-        throw new InvalidAPIError();
+        throw new NotAuthenticated(errorMessage);
       }
       return result[0];
     } catch (error) {
-      throw new InvalidAPIError();
+      throw new NotAuthenticated(errorMessage);
     }
   }
 
   async authenticate(authRequest: AuthenticationResult, params: Params) {
-    const { key, entity, revokedField, headerField } = this.configuration;
+    const {
+      key,
+      errorMessage,
+      entity,
+      revokedField,
+      headerField
+    } = this.configuration;
     const apiKey = authRequest[entity];
     const response = {
       authentication: {
         strategy: this.name,
-        [entity]: apiKey,
+        [entity]: apiKey
       },
       headers: {
         ...params.headers,
-        [headerField]: apiKey,
+        [headerField]: apiKey
       },
       apiKey: true,
-      [entity]: {},
+      [entity]: {}
     };
 
     if (!this.serviceBased) {
-      if (key !== apiKey) throw new InvalidAPIError();
+      if (key !== apiKey) throw new NotAuthenticated(errorMessage);
       return response;
     }
 
@@ -97,7 +94,7 @@ export class ApiKeyStrategy extends AuthenticationBaseStrategy {
     if (apiKey) {
       return {
         strategy: this.name,
-        [entity]: apiKey,
+        [entity]: apiKey
       };
     }
 
